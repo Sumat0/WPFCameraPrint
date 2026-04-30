@@ -1,6 +1,9 @@
-﻿using System;
+﻿using bpac;
+using System;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
+using System.Xml.Linq;
 using Windows.Devices.Enumeration;
 using Windows.Graphics.Imaging;
 using Windows.Media.Capture;
@@ -17,10 +20,10 @@ namespace WpfCamera
 	public partial class MainWindow : Window
 	{
 		private readonly MediaCapture _mediaCapture = new MediaCapture();
+		private const string templatePath = @"C:\Users\ZacharyI\source\repos\WPFCamera\Sources\Assets\Badge_2.lbx";
 		private readonly CaptureElement _captureElement;
 		private StorageFolder _captureFolder;
 		private bool _initialized = false;
-		private bool _isRecording = false;
 
 		public MainWindow()
 		{
@@ -35,8 +38,30 @@ namespace WpfCamera
 
 			XamlHost.Child = _captureElement;
 		}
+        private void btnPrint_Click(object sender, EventArgs e)
+        {
+			var file = @"C:\\Users\\ZacharyI\\source\\repos\\WPFCamera\\Sources\\Assets\\Temp.png";
+			var fileErrored = false;
+			IDocument doc = new Document();
+            if (doc.Open(templatePath) != false)
+            {
+                doc.GetObject("objCompany").Text = txtCompany.Text;
+                doc.GetObject("objName").Text = txtName.Text;
+                fileErrored = doc.GetObject("objProfilePicture").SetData(0, 1, file);
 
-		private async void CaptureElement_Unloaded(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+                // doc.SetMediaById(doc.Printer.GetMediaId(), true);
+                doc.StartPrint("", PrintOptionConstants.bpoDefault);
+                doc.PrintOut(1, PrintOptionConstants.bpoDefault);
+                doc.EndPrint();
+                doc.Close();
+            }
+            else
+            {
+                MessageBox.Show("Open() Error: " + doc.ErrorCode + " \nfileErrored: " + fileErrored);
+            }
+        }
+
+        private async void CaptureElement_Unloaded(object sender, Windows.UI.Xaml.RoutedEventArgs e)
 		{
 			await _mediaCapture.StopPreviewAsync();
 		}
@@ -73,30 +98,6 @@ namespace WpfCamera
 			}
 		}
 
-		private async void Video_Click(object sender, RoutedEventArgs e)
-		{
-			if (!_initialized)
-			{
-				return;
-			}
-
-			if (_isRecording)
-			{ // stop recording
-				_isRecording = false;
-				await _mediaCapture.StopRecordAsync();
-			}
-			else
-			{ // start recording
-				var videoFile = await _captureFolder.CreateFileAsync("Video.wmv", CreationCollisionOption.GenerateUniqueName);
-
-				var encodingProfile = MediaEncodingProfile.CreateWmv(VideoEncodingQuality.Auto);
-
-				await _mediaCapture.StartRecordToStorageFileAsync(encodingProfile, videoFile);
-
-				_isRecording = true;
-			}
-		}
-
 		private async void Photo_Click(object sender, RoutedEventArgs e)
 		{
 			if (!_initialized)
@@ -124,28 +125,5 @@ namespace WpfCamera
 			}
 		}
 
-		private async void Audio_Click(object sender, RoutedEventArgs e)
-		{
-			if (!_initialized)
-			{
-				return;
-			}
-
-			if (_isRecording)
-			{ // stop recording
-				_isRecording = false;
-				await _mediaCapture.StopRecordAsync();
-			}
-			else
-			{ // start recording
-				var audioFile = await _captureFolder.CreateFileAsync("Audio.mp3", CreationCollisionOption.GenerateUniqueName);
-
-				var encodingProfile = MediaEncodingProfile.CreateMp3(AudioEncodingQuality.Medium);
-
-				await _mediaCapture.StartRecordToStorageFileAsync(encodingProfile, audioFile);
-
-				_isRecording = true;
-			}
-		}
 	}
 }
