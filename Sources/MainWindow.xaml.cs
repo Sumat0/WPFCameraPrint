@@ -19,11 +19,18 @@ namespace WpfCamera
 	/// </summary>
 	public partial class MainWindow : Window
 	{
-		private readonly MediaCapture _mediaCapture = new MediaCapture();
+		//private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
+		//With image 
+		private const int _MAX_NAME_LENGTH = 15;
+        private const int _MAX_FIRM_LENGTH = 24;
+
+
+        private readonly MediaCapture _mediaCapture = new MediaCapture();
 		private const string templatePath = @"C:\Users\ZacharyI\source\repos\WPFCamera\Sources\Assets\Badge_2.lbx";
 		private readonly CaptureElement _captureElement;
 		private StorageFolder _captureFolder;
 		private bool _initialized = false;
+		private string _file;
 
 		public MainWindow()
 		{
@@ -33,31 +40,47 @@ namespace WpfCamera
 			{
 				Stretch = Windows.UI.Xaml.Media.Stretch.Uniform
 			};
-			_captureElement.Loaded += CaptureElement_Loaded;
-			_captureElement.Unloaded += CaptureElement_Unloaded;
-
-			XamlHost.Child = _captureElement;
 		}
+
+		private void InitializeCamera()
+		{
+            _captureElement.Loaded += CaptureElement_Loaded;
+            _captureElement.Unloaded += CaptureElement_Unloaded;
+
+            XamlHost.Child = _captureElement;
+        }
+
+		private async void AttachPhoto_Click(object sender, RoutedEventArgs e)
+		{
+			InitializeCamera();
+            btnPhoto.IsEnabled = true;
+        }
+
         private void btnPrint_Click(object sender, EventArgs e)
         {
-			var file = @"C:\\Users\\ZacharyI\\source\\repos\\WPFCamera\\Sources\\Assets\\Temp.png";
-			var fileErrored = false;
 			IDocument doc = new Document();
             if (doc.Open(templatePath) != false)
             {
                 doc.GetObject("objCompany").Text = txtCompany.Text;
                 doc.GetObject("objName").Text = txtName.Text;
-                fileErrored = doc.GetObject("objProfilePicture").SetData(0, 1, file);
+                doc.GetObject("objProfilePicture").SetData(0, _file, 4);
+				// doc.SetMediaById(doc.Printer.GetMediaId(), true);
 
-                // doc.SetMediaById(doc.Printer.GetMediaId(), true);
-                doc.StartPrint("", PrintOptionConstants.bpoDefault);
-                doc.PrintOut(1, PrintOptionConstants.bpoDefault);
-                doc.EndPrint();
-                doc.Close();
+				// Test clause
+				if (true) {
+					string previewPath = @"C:\Users\ZacharyI\source\repos\WPFCamera\Sources\Assets\export.bmp";
+					doc.Export(ExportType.bexBmp, previewPath, 300);
+				} else {
+					doc.StartPrint("", PrintOptionConstants.bpoDefault);
+					doc.PrintOut(1, PrintOptionConstants.bpoDefault);
+					doc.EndPrint();
+				}
+				doc.Close();
+
             }
             else
             {
-                MessageBox.Show("Open() Error: " + doc.ErrorCode + " \nfileErrored: " + fileErrored);
+                MessageBox.Show("Open() Error: " + doc.ErrorCode);
             }
         }
 
@@ -119,11 +142,16 @@ namespace WpfCamera
 				var encoder = await BitmapEncoder.CreateForTranscodingAsync(outputStream, decoder);
 
 				await encoder.FlushAsync();
+				_file = file.Path;
 			}
 			catch (Exception)
 			{
 			}
 		}
 
-	}
+        private void btnPhoto_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+    }
 }
